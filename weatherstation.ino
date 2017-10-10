@@ -1,17 +1,18 @@
-#include <DHT.h>
 #include <ESP8266WiFi.h>
 #include <Wire.h>
+#include <DHT.h>
 #include <Adafruit_BMP085.h>
+#include <WiFiManager.h>
+#include <ESP8266WebServer.h>
 
+WiFiManager wifiManager;
 Adafruit_BMP085 bmp;
  
-// replace with your channel’s thingspeak API key and your SSID and password
-String apiKey = "YOURAPIKEY";
-const char* ssid = "YOURSSID";
-const char* password = "YOURPASSWPHRASE";
+// replace with your channel’s thingspeak API privkey
+String apiKey = "YourAPIkey";
 const char* server = "api.thingspeak.com";
 
-const int numReadings = 10;
+const int numReadings = 9;
 int readIndex = 0;
 
 float treadings[numReadings];
@@ -33,10 +34,20 @@ float paverage = 0;
 #define DHTTYPE DHT11 
  
 DHT dht(DHTPIN, DHTTYPE);
-WiFiClient client;
+
+WiFiClient client;      
  
 void setup()  {
+  Serial.begin(115200); 
+
+  // uncomment below to reset wifimanager settings
+  /*
+  Serial.println("clearing wifi settins");
+  wifiManager.resetSettings();
+   */
   
+  Serial.println("Beginning setup");
+  Serial.println("  Initializing arrays");
   for ( int thisReading = 0 ; thisReading < numReadings; thisReading++) {
     treadings[thisReading] = 0;
     hreadings[thisReading] = 0;
@@ -49,28 +60,12 @@ void setup()  {
   }
   
   
-  Serial.begin(115200);
+  
   delay(10);
   dht.begin();
-   
-  WiFi.begin(ssid, password);
-   
-  Serial.println();
-  Serial.println();
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
-   
-  WiFi.begin(ssid, password);
-   
-  while (WiFi.status() != WL_CONNECTED) 
-  {
-    delay(500);
-    Serial.print(".");
-  }
 
-  Serial.println("");
-  Serial.println("WiFi connected");
- 
+  wifiManager.autoConnect("WeatherStation");
+
 }
  
 void loop(){
@@ -101,8 +96,11 @@ void loop(){
   readIndex = readIndex + 1;
 
   if (readIndex >= numReadings) {
-    readIndex = 1;
-
+    readIndex = 0;
+    if (isnan(haverage) || isnan(taverage)) {
+      Serial.println("humudity and/or temp averages are NaN");
+      ESP.reset ();
+    }
     Serial.print("Average Temperature: ");
     Serial.print(taverage);
     Serial.print(" Average humidity: ");
