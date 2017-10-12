@@ -9,7 +9,7 @@ WiFiManager wifiManager;
 Adafruit_BMP085 bmp;
  
 // replace with your channel’s thingspeak API privkey
-String apiKey = "YourAPIkey";
+String apiKey = "GetYourOwnDangKey";
 const char* server = "api.thingspeak.com";
 
 const int numReadings = 9;
@@ -44,7 +44,7 @@ void setup()  {
   /*
   Serial.println("clearing wifi settins");
   wifiManager.resetSettings();
-   */
+  */
   
   Serial.println("Beginning setup");
   Serial.println("  Initializing arrays");
