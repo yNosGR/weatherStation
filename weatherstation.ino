@@ -15,22 +15,9 @@ const char* server = "api.thingspeak.com";
 const int numReadings = 9;
 int readIndex = 0;
 
-float treadings[numReadings];
-float treadIndex = 0;        
-float ttotal = 0;            
-float taverage = 0;          
-
-float hreadings[numReadings];
-float hreadIndex = 0;        
-float htotal = 0;           
-float haverage = 0;         
-
-float preadings[numReadings]; 
-float preadIndex = 0;         
-float ptotal = 0;             
-float paverage = 0;          
-
+// what pin is the temp/humidity sensor on?
 #define DHTPIN D4
+//what kind is it?
 #define DHTTYPE DHT11 
  
 DHT dht(DHTPIN, DHTTYPE);
@@ -47,31 +34,40 @@ void setup()  {
    */
   
   Serial.println("Beginning setup");
-
+  // make sure we can see our sensor
   if (!bmp.begin()) {
     Serial.println("Could not find BMP180 or BMP085 sensor at 0x77");
     while (1) {}   
   }
-  
-  
-  
+  //wait for it to settle from the last command    
   delay(10);
+  // start the handshake/setup
   dht.begin();
-
+  
+  // connect to the wifi or setup the "WeatherStation" ssid so someone can connect to the right AP
   wifiManager.autoConnect("WeatherStation");
 
 }
  
 void loop(){
 
-   
+  // collect data   
   float h = dht.readHumidity();
   float t = dht.readTemperature();
   float p = bmp.readPressure();
+
+  while (isnan(p) ) {
+    Serial.println("Failed to read from BMP180! Sleeping for a moment.");
+    delay(2000);
+    float p = bmp.readPressure();
+    return;
+   }
+
   
-  // simple altitude compensation. 
+  // divide down to get it to a useful unit, then do simple altitude compensation for my location. 
   p = (p/100)+26 ; 
-    
+
+  // push the data up to thingspeak
   if (client.connect(server,80)) {
     String postStr = apiKey;
     postStr +="&field1=";
@@ -90,18 +86,10 @@ void loop(){
     client.print("Content-Length: ");
     client.print(postStr.length());
     client.print("\n\n");
-    client.print(postStr);
-     
-    
+    client.print(postStr);   
   }
   client.stop();
 
-
-  if (isnan(p) ) {
-    Serial.println("Failed to read from BMP180! Sleeping for a moment.");
-    delay(20000);
-    return;
-   }
    
   Serial.print("Temperature: ");
   Serial.print(t);
